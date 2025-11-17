@@ -2,9 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:music_recommendation_system/Pages/EmotionsScreen.dart';
 import 'package:music_recommendation_system/Pages/HomeScreen.dart';
 import 'package:music_recommendation_system/Pages/ManualEEGInputScreen.dart';
+import 'package:music_recommendation_system/services/user_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+  
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final UserService _userService = UserService();
+  
+  Future<void> _handleLogout() async {
+    await _userService.signOut();
+    if (mounted) {
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
@@ -44,7 +59,7 @@ class ProfileScreen extends StatelessWidget {
                 child: CircleAvatar(
                   radius: 50,
                   backgroundImage: AssetImage(
-                      'assets/profile.jpg'), 
+                      'assets/profile.jpg'),
                 ),
               ),
               SizedBox(height: 16),
@@ -82,14 +97,12 @@ class ProfileScreen extends StatelessWidget {
                 title: Text('Edit Profile'),
                 trailing: Icon(Icons.chevron_right),
                 onTap: () {
-                  // Handle edit profile action
                 },
               ),
               ListTile(
                 title: Text('Change Password'),
                 trailing: Icon(Icons.chevron_right),
                 onTap: () {
-                  // Handle change password action
                 },
               ),
               SizedBox(height: 16),
@@ -105,7 +118,6 @@ class ProfileScreen extends StatelessWidget {
                 title: Text('Notifications'),
                 trailing: Icon(Icons.chevron_right),
                 onTap: () {
-                  // Handle notifications action
                 },
               ),
               SizedBox(height: 16),
@@ -121,14 +133,12 @@ class ProfileScreen extends StatelessWidget {
                 title: Text('Language'),
                 trailing: Text('English'),
                 onTap: () {
-                  // Handle language action
                 },
               ),
               ListTile(
                 title: Text('Theme'),
                 trailing: Text('System'),
                 onTap: () {
-                  // Handle theme action
                 },
               ),
               SizedBox(height: 16),
@@ -144,8 +154,16 @@ class ProfileScreen extends StatelessWidget {
                 title: Text('Listening History'),
                 trailing: Icon(Icons.chevron_right),
                 onTap: () {
-                  // Handle listening history action
                 },
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                title: const Text(
+                  'Logout',
+                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
+                ),
+                leading: const Icon(Icons.logout, color: Colors.red),
+                onTap: _handleLogout,
               ),
             ],
           ),

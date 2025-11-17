@@ -5,9 +5,6 @@ import 'HomeScreen.dart';
 import 'EmotionsScreen.dart';
 import 'ProfileScreen.dart';
 
-// You would use this screen in your main.dart file like this:
-// home: const ManualEEGInputScreen(),
-
 class ManualEEGInputScreen extends StatefulWidget {
   const ManualEEGInputScreen({super.key});
 
@@ -16,9 +13,7 @@ class ManualEEGInputScreen extends StatefulWidget {
 }
 
 class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
-  // Controller for the input text field
   final TextEditingController _eegController = TextEditingController();
-  // State to hold the predicted emotion
   String _predictedEmotion = "";
   String _errorMessage = "";
   bool _isLoading = false;
@@ -30,7 +25,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
   static const String _spotifyClientId = "5471f3d6b8214f8e9411516b3038e476";
   static const String _spotifyClientSecret = "d32f8353924c4168b7efd099f391aaee";
 
-  // Function to predict emotion using backend API
+
   Future<void> _predictEmotion() async {
     if (_eegController.text.trim().isEmpty) {
       setState(() {
@@ -45,7 +40,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
     });
 
     try {
-      // Parse input text to EEG matrix
+
       List<List<double>> eegMatrix = [];
       List<String> lines = _eegController.text.trim().split('\n');
 
@@ -65,26 +60,25 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
         throw Exception("No valid EEG data found");
       }
 
-      print('EEG Matrix: $eegMatrix'); // Debug print
+      print('EEG Matrix: $eegMatrix');
 
-      // Make API request
+
       final response = await http.post(
         Uri.parse('$_apiUrl/predict-raw'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'eeg_matrix': eegMatrix}),
       );
 
-      print('API Response Status: ${response.statusCode}'); // Debug print
-      print('API Response Body: ${response.body}'); // Debug print
+      print('API Response Status: ${response.statusCode}');
+      print('API Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final emotion = data['emotion'] ?? 'Unknown';
-        print('Predicted Emotion: $emotion'); // Debug print
+        print('Predicted Emotion: $emotion');
 
-        // Get Spotify tracks based on emotion
         final tracks = await _getSpotifyPlaylists(emotion);
-        print('Spotify Tracks Count: ${tracks.length}'); // Debug print
+        print('Spotify Tracks Count: ${tracks.length}');
 
         setState(() {
           _predictedEmotion = emotion;
@@ -93,9 +87,8 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
           _isLoading = false;
         });
 
-        // Navigate to home page with emotion and tracks data
         if (mounted) {
-          print('Attempting navigation to HomeScreen'); // Debug print
+          print('Attempting navigation to HomeScreen');
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
@@ -108,7 +101,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
                 ),
               ),
             );
-            print('Navigation completed'); // Debug print
+            print('Navigation completed');
           });
         }
       } else {
@@ -122,7 +115,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
         throw Exception(errorMsg);
       }
     } catch (e) {
-      print('Prediction Error: $e'); // Debug print
+      print('Prediction Error: $e');
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
         _isLoading = false;
@@ -130,7 +123,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
     }
   }
 
-  // Get Spotify access token
+
   Future<String> _getSpotifyToken() async {
     String credentials =
         base64Encode(utf8.encode('$_spotifyClientId:$_spotifyClientSecret'));
@@ -148,7 +141,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
     throw Exception('Failed to get Spotify token');
   }
 
-  // Get tracks from Spotify based on emotion
+
   Future<List<dynamic>> _getSpotifyPlaylists(String emotion) async {
     try {
       final token = await _getSpotifyToken();
@@ -169,7 +162,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
     return [];
   }
 
-  // Show Spotify URL
+
   void _showSpotifyUrl(BuildContext context, String url) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -179,7 +172,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
     );
   }
 
-  // Function to clear input and reset state
+
   void _clearInput() {
     setState(() {
       _eegController.clear();
@@ -200,7 +193,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 1. App Bar
+
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -228,13 +221,13 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
         titleTextStyle: const TextStyle(color: Colors.black, fontSize: 20),
       ),
 
-      // 2. Body Content
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            // Instructions
+
             const Text(
               'Manual EEG Data Input Instructions',
               style: TextStyle(
@@ -329,7 +322,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Error Message Display
+
             if (_errorMessage.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(12),
@@ -348,7 +341,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
                 ),
               ),
 
-            // EEG Value Input Field
+
             TextField(
               controller: _eegController,
               maxLines: 5,
@@ -367,11 +360,11 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Action Buttons (Predict Emotion and Clear Input)
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                // Predict Emotion Button
+
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _predictEmotion,
@@ -402,7 +395,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                // Clear Input Button
+
                 OutlinedButton(
                   onPressed: _clearInput,
                   style: OutlinedButton.styleFrom(

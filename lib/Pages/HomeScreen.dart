@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:music_recommendation_system/Pages/ProfileScreen.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:music_recommendation_system/services/music_service.dart';
 import 'EmotionsScreen.dart';
 import 'ManualEEGInputScreen.dart';
 import 'MusicPlayerScreen.dart';
@@ -14,6 +15,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final MusicService _musicService = MusicService();
   String? _currentlyPlaying;
   bool _isPlaying = false;
 
@@ -70,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     CircleAvatar(
                       backgroundImage: AssetImage(
-                          'assets/profile.jpg'), 
+                          'assets/profile.jpg'),
                       radius: 20,
                     ),
                     const SizedBox(width: 8),
@@ -266,6 +268,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           trailing: IconButton(
                             onPressed: () {
+                              _musicService.addToRecentlyPlayed(track);
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -296,49 +299,81 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Column(
-                  children: [
-                    ListTile(
-                      leading: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.asset(
-                          'assets/song1.jpg',
-                          height: 50,
-                          width: 50,
-                          fit: BoxFit.cover,
+_musicService.recentlyPlayed.isEmpty
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: Text(
+                            'No recently played tracks',
+                            style: TextStyle(color: Colors.grey),
+                          ),
                         ),
+                      )
+                    : Column(
+                        children: _musicService.recentlyPlayed.take(5).map((track) {
+                          final album = track['album'] as Map?;
+                          final images = album?['images'] as List?;
+                          final imageUrl = images?.isNotEmpty == true ? images![0]['url'] : null;
+                          final trackName = track['name']?.toString() ?? 'Unknown Track';
+                          final artistName = track['artists']?[0]?['name']?.toString() ?? 'Unknown Artist';
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              leading: imageUrl != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.network(
+                                        imageUrl,
+                                        width: 50,
+                                        height: 50,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Container(
+                                            width: 50,
+                                            height: 50,
+                                            color: Colors.grey[300],
+                                            child: const Icon(Icons.music_note),
+                                          );
+                                        },
+                                      ),
+                                    )
+                                  : Container(
+                                      width: 50,
+                                      height: 50,
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.music_note),
+                                    ),
+                              title: Text(
+                                trackName,
+                                style: const TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                              subtitle: Text(
+                                artistName,
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                              trailing: IconButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => MusicPlayerScreen(
+                                        trackData: track,
+                                        currentEmotion: currentEmotion,
+                                        recommendedPlaylists: recommendedPlaylists,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(
+                                  Icons.play_arrow,
+                                  color: Colors.blueAccent,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      title: const Text('Song Title 1'),
-                      subtitle: const Text('Artist 1'),
-                    ),
-                    ListTile(
-                      leading: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.asset(
-                          'assets/song2.jpg',
-                          height: 50,
-                          width: 50,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      title: const Text('Song Title 2'),
-                      subtitle: const Text('Artist 2'),
-                    ),
-                    ListTile(
-                      leading: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.asset(
-                          'assets/song3.jpg',
-                          height: 50,
-                          width: 50,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      title: const Text('Song Title 3'),
-                      subtitle: const Text('Artist 3'),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),

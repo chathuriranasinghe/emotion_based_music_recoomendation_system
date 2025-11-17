@@ -143,7 +143,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     }
   }
 
-  // Helper to format duration for display
+
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, "0");
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
@@ -154,33 +154,32 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // --- App Bar ---
+
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black),
           onPressed: () {
-            // Handle closing the player / navigating back
             Navigator.pop(context); 
           },
         ),
         title: const Text(
-          'Player', // Title based on the screenshot, though it's partially cut off
+          'Player',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
-        centerTitle: false, // Align title to the left
-        backgroundColor: Colors.white, // Match the background
-        elevation: 0, // No shadow
+        centerTitle: false,
+        backgroundColor: Colors.white,
+        elevation: 0
       ),
 
-      // --- Body Content ---
+
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
         child: Column(
           children: <Widget>[
-            // Flexible space to push content down slightly
+
             const Spacer(flex: 2),
 
-            // Album Art
+
             Container(
               width: MediaQuery.of(context).size.width * 0.75,
               height: MediaQuery.of(context).size.width * 0.75,
@@ -225,7 +224,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
             const Spacer(flex: 1),
 
-            // Song Title and Artist
+
             Text(
               _songTitle,
               style: const TextStyle(
@@ -257,7 +256,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
             const Spacer(flex: 1),
 
-            // Progress Slider
+
             SliderTheme(
               data: SliderTheme.of(context).copyWith(
                 trackHeight: 4.0,
@@ -297,7 +296,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Playback Controls
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
@@ -350,15 +349,15 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
               ],
             ),
 
-            const Spacer(flex: 3), // Push bottom nav to the bottom
+            const Spacer(flex: 3),
           ],
         ),
       ),
 
-      // --- Bottom Navigation Bar ---
+
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 2, // 'Music' is the active tab (index 2)
-        type: BottomNavigationBarType.fixed, // Ensures all labels are visible
+        currentIndex: 2,
+        type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
         backgroundColor: Colors.white,
@@ -371,7 +370,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.sentiment_satisfied_alt_outlined), // Changed to reflect "Emotions"
+            icon: Icon(Icons.sentiment_satisfied_alt_outlined),
             activeIcon: Icon(Icons.sentiment_satisfied_alt),
             label: 'Emotions',
           ),

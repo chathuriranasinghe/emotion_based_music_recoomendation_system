@@ -66,9 +66,8 @@ class RecommendationsScreen extends StatelessWidget {
         ],
         selectedItemColor: Colors.blueAccent,
         unselectedItemColor: Colors.grey,
-        currentIndex: 1, // Set to 1 for Emotions screen
+        currentIndex: 1,
         onTap: (index) {
-          // Handle navigation
         },
       ),
     );
