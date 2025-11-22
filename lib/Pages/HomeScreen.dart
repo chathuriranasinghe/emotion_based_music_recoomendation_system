@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:music_recommendation_system/Pages/ProfileScreen.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:music_recommendation_system/services/music_service.dart';
+import 'package:music_recommendation_system/services/emotion_service.dart';
 import 'EmotionsScreen.dart';
 import 'ManualEEGInputScreen.dart';
 import 'MusicPlayerScreen.dart';
@@ -18,6 +19,20 @@ class _HomeScreenState extends State<HomeScreen> {
   final MusicService _musicService = MusicService();
   String? _currentlyPlaying;
   bool _isPlaying = false;
+  String? _persistedEmotion;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPersistedEmotion();
+  }
+
+  Future<void> _loadPersistedEmotion() async {
+    final emotion = await EmotionService.getCurrentEmotion();
+    setState(() {
+      _persistedEmotion = emotion;
+    });
+  }
 
   Future<void> _playTrack(String? previewUrl, String trackName) async {
     if (previewUrl == null) {
@@ -56,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final currentEmotion = args?['currentEmotion'];
+    final currentEmotion = args?['currentEmotion'] ?? _persistedEmotion;
     final recommendedPlaylists = args?['recommendedPlaylists'] as List<dynamic>? ?? [];
     return Scaffold(
       body: SafeArea(
@@ -110,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              currentEmotion?.toUpperCase() ?? 'Joyful',
+                              currentEmotion?.toUpperCase() ?? 'No emotion detected',
                               style: const TextStyle(
                                 fontSize: 16,
                                 color: Colors.black87,
@@ -120,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Text(
                               currentEmotion != null 
                                   ? 'Your EEG data indicates a state of ${currentEmotion.toLowerCase()}.'
-                                  : 'Your EEG data indicates a state of happiness and contentment.',
+                                  : 'Connect your EEG device to detect emotions.',
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.black54,
@@ -130,12 +145,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.asset(
-                          'assets/joyful_emoji.jpg',
-                          height: 40,
-                        ),
+                      Icon(
+                        currentEmotion != null ? Icons.psychology : Icons.device_unknown,
+                        size: 40,
+                        color: Colors.orange,
                       ),
                     ],
                   ),
@@ -151,68 +164,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 16),
                 if (recommendedPlaylists.isEmpty)
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        Column(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.asset(
-                                'assets/uplifting_beats.jpg',
-                                height: 100,
-                                width: 100,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Uplifting Beats',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const Text(
-                              'Songs to keep your spirits high',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 16),
-                        Column(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.asset(
-                                'assets/chill_vibes.jpg',
-                                height: 100,
-                                width: 100,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Chill Vibes',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const Text(
-                              'Relaxing tunes for a calm mind',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Text(
+                        'No recommendations available. Connect your EEG device or input data manually to get personalized music recommendations.',
+                        style: TextStyle(color: Colors.grey),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   )
                 else

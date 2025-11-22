@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:music_recommendation_system/Pages/EmotionsScreen.dart';
 import 'package:music_recommendation_system/Pages/HomeScreen.dart';
 import 'package:music_recommendation_system/Pages/ManualEEGInputScreen.dart';
@@ -13,6 +14,37 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final UserService _userService = UserService();
+  Map<String, dynamic>? _userProfile;
+  bool _isLoading = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+  
+  Future<void> _loadUserProfile() async {
+    try {
+      final user = _userService.currentUser;
+      if (user != null) {
+        final response = await Supabase.instance.client
+            .from('users')
+            .select()
+            .eq('id', user.id)
+            .single();
+        
+        setState(() {
+          _userProfile = response;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print('Error loading profile: $e');
+    }
+  }
   
   Future<void> _handleLogout() async {
     await _userService.signOut();
@@ -49,41 +81,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundImage: AssetImage(
-                      'assets/profile.jpg'),
-                ),
-              ),
-              SizedBox(height: 16),
-              Center(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Sophia Carter',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                    Center(
+                      child: CircleAvatar(
+                        radius: 50,
+                        child: _userProfile == null
+                            ? const Icon(Icons.person, size: 50)
+                            : null,
                       ),
                     ),
-                    Text(
-                      'Joined 2021',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
+                    const SizedBox(height: 16),
+                    Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            _userProfile?['username'] ?? _userService.currentUser?.email?.split('@')[0] ?? 'User',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          Text(
+                            _userService.currentUser?.email ?? 'No email',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          if (_userProfile?['age'] != null)
+                            Text(
+                              'Age: ${_userProfile!['age']}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
               SizedBox(height: 32),
               Text(
                 'Account',
@@ -131,13 +174,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               ListTile(
                 title: Text('Language'),
-                trailing: Text('English'),
+                trailing: Icon(Icons.chevron_right),
                 onTap: () {
                 },
               ),
               ListTile(
                 title: Text('Theme'),
-                trailing: Text('System'),
+                trailing: Icon(Icons.chevron_right),
                 onTap: () {
                 },
               ),

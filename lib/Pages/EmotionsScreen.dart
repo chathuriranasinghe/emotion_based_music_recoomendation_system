@@ -3,6 +3,7 @@ import 'package:music_recommendation_system/Pages/HomeScreen.dart';
 import 'package:music_recommendation_system/Pages/ProfileScreen.dart';
 import 'package:music_recommendation_system/Pages/RecommendationsScreen.dart';
 import 'package:music_recommendation_system/Pages/ManualEEGInputScreen.dart';
+import 'package:music_recommendation_system/services/emotion_service.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'MusicPlayerScreen.dart';
 
@@ -17,6 +18,20 @@ class _EmotionsScreenState extends State<EmotionsScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   String? _currentlyPlaying;
   bool _isPlaying = false;
+  String? _persistedEmotion;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPersistedEmotion();
+  }
+
+  Future<void> _loadPersistedEmotion() async {
+    final emotion = await EmotionService.getCurrentEmotion();
+    setState(() {
+      _persistedEmotion = emotion;
+    });
+  }
 
   Future<void> _playTrack(String? previewUrl, String trackName) async {
     if (previewUrl == null) {
@@ -52,10 +67,41 @@ class _EmotionsScreenState extends State<EmotionsScreen> {
     super.dispose();
   }
 
+  String _getEmotionGuidance(String? emotion) {
+    if (emotion == null) return 'Connect your EEG device to detect your emotional state and get personalized music recommendations.';
+    
+    switch (emotion.toLowerCase()) {
+      case 'sad':
+      case 'sadness':
+        return 'We detected sadness. Here\'s uplifting music to help boost your mood and bring positivity to your day.';
+      case 'happy':
+      case 'joy':
+      case 'joyful':
+        return 'You\'re feeling happy! Here are energetic tracks to amplify your joy and keep the good vibes flowing.';
+      case 'angry':
+      case 'anger':
+        return 'We sense anger. These calming tracks can help you relax and find inner peace.';
+      case 'stressed':
+      case 'anxiety':
+        return 'Feeling stressed? These peaceful melodies are designed to help you unwind and reduce anxiety.';
+      case 'excited':
+        return 'Your excitement is contagious! Here\'s high-energy music to match your enthusiasm.';
+      case 'calm':
+      case 'relaxed':
+        return 'You\'re in a calm state. Enjoy these peaceful tracks to maintain your tranquility.';
+      case 'lonely':
+        return 'Feeling lonely? These comforting songs can provide warmth and connection.';
+      case 'confident':
+        return 'Your confidence is shining! Here are empowering tracks to fuel your strength.';
+      default:
+        return 'We\'ve detected your ${emotion.toLowerCase()} state and curated music to enhance your emotional well-being.';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final currentEmotion = args?['currentEmotion'];
+    final currentEmotion = args?['currentEmotion'] ?? _persistedEmotion;
     final recommendedPlaylists = args?['recommendedPlaylists'] as List<dynamic>? ?? [];
     return Scaffold(
       appBar: AppBar(
@@ -112,9 +158,7 @@ class _EmotionsScreenState extends State<EmotionsScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              currentEmotion != null 
-                  ? 'This ${currentEmotion.toLowerCase()} state has been detected from your EEG data. We\'ve curated music to match your mood.'
-                  : 'This state is ideal for unwinding and enjoying calming music. We\'ve curated a playlist to match your mood.',
+              _getEmotionGuidance(currentEmotion),
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey[600],

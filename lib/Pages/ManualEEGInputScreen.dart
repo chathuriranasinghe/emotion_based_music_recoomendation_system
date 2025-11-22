@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'HomeScreen.dart';
 import 'EmotionsScreen.dart';
 import 'ProfileScreen.dart';
+import '../services/emotion_service.dart';
 
 class ManualEEGInputScreen extends StatefulWidget {
   const ManualEEGInputScreen({super.key});
@@ -80,6 +81,8 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
         final tracks = await _getSpotifyPlaylists(emotion);
         print('Spotify Tracks Count: ${tracks.length}');
 
+        await EmotionService.saveEmotion(emotion);
+        
         setState(() {
           _predictedEmotion = emotion;
           _playlists = tracks;
@@ -88,7 +91,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
         });
 
         if (mounted) {
-          print('Attempting navigation to HomeScreen');
+          print('Attempting navigation to EmotionsScreen');
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
@@ -145,21 +148,96 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
   Future<List<dynamic>> _getSpotifyPlaylists(String emotion) async {
     try {
       final token = await _getSpotifyToken();
+      final searchQuery = _getEmotionBasedQuery(emotion);
 
       final response = await http.get(
         Uri.parse(
-            'https://api.spotify.com/v1/search?q=$emotion&type=track&limit=10'),
+            'https://api.spotify.com/v1/search?q=$searchQuery&type=track&limit=50'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return data['tracks']['items'] ?? [];
+        final tracks = data['tracks']['items'] ?? [];
+        return await _filterTracksByEmotion(tracks, emotion, token);
       }
     } catch (e) {
       print('Error fetching tracks: $e');
     }
     return [];
+  }
+
+  Future<List<dynamic>> _filterTracksByEmotion(List<dynamic> tracks, String emotion, String token) async {
+    return tracks.take(15).toList();
+  }
+
+  Future<Map<String, dynamic>?> _getAudioFeatures(String trackId, String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.spotify.com/v1/audio-features/$trackId'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      print('Error getting audio features: $e');
+    }
+    return null;
+  }
+
+  bool _matchesEmotionCriteria(Map<String, dynamic> audioFeatures, String emotion) {
+    final valence = (audioFeatures['valence'] ?? 0.0).toDouble();
+    final energy = (audioFeatures['energy'] ?? 0.0).toDouble();
+    final danceability = (audioFeatures['danceability'] ?? 0.0).toDouble();
+    
+    print('Audio features - Valence: $valence, Energy: $energy, Danceability: $danceability');
+    
+    switch (emotion.toLowerCase()) {
+      case 'sad':
+      case 'sadness':
+        final matches = valence > 0.5 && energy > 0.4;
+        print('SAD criteria (valence > 0.5, energy > 0.4): $matches');
+        return matches;
+      case 'happy':
+      case 'joy':
+      case 'joyful':
+        final matches = valence > 0.4 && danceability > 0.3;
+        print('HAPPY criteria (valence > 0.4, danceability > 0.3): $matches');
+        return matches;
+      default:
+        return true;
+    }
+  }
+
+  String _getEmotionBasedQuery(String emotion) {
+    switch (emotion.toLowerCase()) {
+      case 'sad':
+      case 'sadness':
+        return 'happy mood feel good positive vibes';
+      case 'happy':
+      case 'joy':
+      case 'joyful':
+        return 'party hits top hits dance pop';
+      case 'angry':
+      case 'anger':
+        return 'calm peaceful relaxing meditation';
+      case 'stressed':
+      case 'anxiety':
+        return 'relaxing peaceful meditation calm';
+      case 'excited':
+        return 'high energy dance party';
+      case 'calm':
+      case 'relaxed':
+        return 'peaceful ambient chill';
+      case 'lonely':
+        return 'comfort warm acoustic';
+      case 'confident':
+        return 'empowering motivational';
+      default:
+        return 'feel good positive';
+    }
   }
 
 
@@ -176,11 +254,8 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
   void _clearInput() {
     setState(() {
       _eegController.clear();
-      _predictedEmotion = "";
       _errorMessage = "";
       _isLoading = false;
-      _playlists = [];
-      _showPlaylists = false;
     });
   }
 
@@ -231,7 +306,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
             const Text(
               'Manual EEG Data Input Instructions',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -239,7 +314,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
             const Text(
               'Enter your EEG values for each channel.',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 color: Colors.black87,
                 fontWeight: FontWeight.w500,
               ),
@@ -248,7 +323,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
             const Text(
               'Separate each number with a comma ,',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 color: Colors.black87,
               ),
             ),
@@ -256,7 +331,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
             const Text(
               'Each line represents one channel.',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 color: Colors.black87,
               ),
             ),
@@ -264,7 +339,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
             const Text(
               'Example (2 channels):',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.black87,
               ),
@@ -280,7 +355,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
               child: const Text(
                 '0.12,0.25,0.30,0.18,0.40\n0.15,0.28,0.35,0.20,0.42',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 15,
                   fontFamily: 'monospace',
                   color: Colors.black87,
                 ),
@@ -290,7 +365,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
             const Text(
               'Tips:',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.black87,
               ),
@@ -299,7 +374,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
             const Text(
               '• Use only numbers.\n• Keep the same number of values per channel.\n• Press Predict Emotion to see results.\n• Press Clear Input to start over.',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 color: Colors.black87,
               ),
             ),
@@ -307,7 +382,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
             const Text(
               'Errors:',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.red,
               ),
@@ -316,12 +391,36 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
             const Text(
               'If the format is wrong, the system will show a message in red.',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 color: Colors.red,
               ),
             ),
             const SizedBox(height: 16),
 
+            if (_predictedEmotion.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.psychology, color: Colors.green[700]),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Current Emotion: $_predictedEmotion',
+                      style: TextStyle(
+                        color: Colors.green[700],
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
             if (_errorMessage.isNotEmpty)
               Container(
@@ -336,7 +435,7 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
                   _errorMessage,
                   style: const TextStyle(
                     color: Colors.red,
-                    fontSize: 14,
+                    fontSize: 16,
                   ),
                 ),
               ),
@@ -395,7 +494,6 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
-
                 OutlinedButton(
                   onPressed: _clearInput,
                   style: OutlinedButton.styleFrom(
@@ -414,6 +512,40 @@ class _ManualEEGInputScreenState extends State<ManualEEGInputScreen> {
                 ),
               ],
             ),
+            if (_showPlaylists && _playlists.isNotEmpty)...[
+              const SizedBox(height: 20),
+              Text(
+                'Recommended for $_predictedEmotion:',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _playlists.length,
+                itemBuilder: (context, index) {
+                  final track = _playlists[index];
+                  return Card(
+                    child: ListTile(
+                      leading: track['album']['images'].isNotEmpty
+                          ? Image.network(
+                              track['album']['images'][0]['url'],
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
+                            )
+                          : const Icon(Icons.music_note),
+                      title: Text(track['name']),
+                      subtitle: Text(track['artists'][0]['name']),
+                      onTap: () => _showSpotifyUrl(context, track['external_urls']['spotify']),
+                    ),
+                  );
+                },
+              ),
+            ],
             const SizedBox(height: 30),
           ],
         ),
